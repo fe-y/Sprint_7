@@ -1,56 +1,37 @@
-package steps;
+package ru.yandex.praktikum.steps;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
-import io.restassured.response.ValidatableResponse;
-import io.restassured.RestAssured;
-import java.util.HashMap;
-import java.util.Map;
-
+import ru.yandex.praktikum.models.Courier;
+import ru.yandex.praktikum.models.CourierLogin;
 import static io.restassured.RestAssured.given;
 
 public class CourierSteps {
 
-    private final String BASE_URI = "https://qa-scooter.praktikum-services.ru";
-    private final String POST_CREATE = "/api/v1/courier";
-    private final String POST_LOGIN = "/api/v1/courier/login";
-    private final String DELETE_DELETE = "/api/v1/courier/{id}";
+    private final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
 
-    public Response createCourier(String login, String password, String firstName) {
-        Map<String, String> body = new HashMap<>();
-        body.put("login", login);
-        body.put("password", password);
-        body.put("firstName", firstName);
-
-        return RestAssured.given()
-                .baseUri(BASE_URI)
+    // Создание курьера
+    public Response createCourier(Courier courier) {
+        return given()
                 .contentType(ContentType.JSON)
-                .body(body)
+                .body(courier)
                 .when()
-                .post(POST_CREATE);
+                .post(BASE_URL + "/api/v1/courier");
     }
 
-    public ValidatableResponse loginCourier(String login, String password) {
-        Map<String, String> body = new HashMap<>();
-        body.put("login", login);
-        body.put("password", password);
-
-        return RestAssured.given()
-                .baseUri(BASE_URI)
+    // Логин курьера
+    public Response loginCourier(CourierLogin courierLogin) {
+        return given()
                 .contentType(ContentType.JSON)
-                .body(body)
+                .body(courierLogin)
                 .when()
-                .post(POST_LOGIN)
-                .then();
+                .post(BASE_URL + "/api/v1/courier/login");
     }
 
-    public ValidatableResponse deleteCourier(String id) {
-        return RestAssured.given()
-                .baseUri(BASE_URI)
-                .contentType(ContentType.JSON)
-                .pathParam("id", id)
+    // Удаление курьера по id
+    public Response deleteCourier(int courierId) {
+        return given()
                 .when()
-                .delete(DELETE_DELETE)
-                .then();
+                .delete(BASE_URL + "/api/v1/courier/" + courierId);
     }
 }
