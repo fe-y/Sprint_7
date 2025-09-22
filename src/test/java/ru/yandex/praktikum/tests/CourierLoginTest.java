@@ -1,5 +1,7 @@
 package ru.yandex.praktikum.tests;
 
+import io.qameta.allure.Description;
+import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.Before;
@@ -7,9 +9,8 @@ import org.junit.Test;
 import ru.yandex.praktikum.models.Courier;
 import ru.yandex.praktikum.models.CourierLogin;
 import ru.yandex.praktikum.steps.CourierSteps;
-import io.qameta.allure.Step;
-import io.qameta.allure.Description;
 
+import static org.apache.http.HttpStatus.*;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -42,7 +43,7 @@ public class CourierLoginTest extends BaseTest {
     public void loginCourierPositive() {
         Response loginResponse = loginCourierStep(new CourierLogin(uniqueLogin, "password123"))
                 .then()
-                .statusCode(200)
+                .statusCode(SC_OK)
                 .body("id", notNullValue())
                 .extract()
                 .response();
@@ -50,44 +51,46 @@ public class CourierLoginTest extends BaseTest {
     }
 
     @Test
-    @Description("Логин курьера с неправильным паролем")
+    @Description("Проверка ошибки при попытке логина курьера с неверным паролем")
     public void loginCourierWrongPassword() {
         loginCourierStep(new CourierLogin(uniqueLogin, "wrongPassword"))
                 .then()
-                .statusCode(404)
+                .statusCode(SC_NOT_FOUND)
                 .body("message", equalTo("Учетная запись не найдена"));
     }
 
     @Test
-    @Description("Логин курьера с неправильным логином")
+    @Description("Проверка ошибки при попытке логина курьера с неверным логином")
     public void loginCourierWrongLogin() {
         loginCourierStep(new CourierLogin("wrongLogin", "password123"))
                 .then()
-                .statusCode(404)
+                .statusCode(SC_NOT_FOUND)
                 .body("message", equalTo("Учетная запись не найдена"));
     }
 
     @Test
-    @Description("Логин курьера с пустым логином")
+    @Description("Проверка ошибки при попытке логина курьера без логина")
     public void loginCourierEmptyLogin() {
         loginCourierStep(new CourierLogin("", "password123"))
                 .then()
-                .statusCode(400)
+                .statusCode(SC_BAD_REQUEST)
                 .body("message", equalTo("Недостаточно данных для входа"));
     }
 
     @Test
-    @Description("Логин курьера с пустым паролем")
+    @Description("Проверка ошибки при попытке логина курьера без пароля")
     public void loginCourierEmptyPassword() {
         loginCourierStep(new CourierLogin(uniqueLogin, ""))
                 .then()
-                .statusCode(400)
+                .statusCode(SC_BAD_REQUEST)
                 .body("message", equalTo("Недостаточно данных для входа"));
     }
 
     @Step("Создаём курьера: {courier.login}")
     private void createCourierStep(Courier courier) {
-        courierSteps.createCourier(courier).then().statusCode(201);
+        courierSteps.createCourier(courier)
+                .then()
+                .statusCode(SC_CREATED);
     }
 
     @Step("Логинимся курьером: {login.login}")
@@ -97,6 +100,8 @@ public class CourierLoginTest extends BaseTest {
 
     @Step("Удаляем курьера с ID: {id}")
     private void deleteCourierStep(int id) {
-        courierSteps.deleteCourier(id).then().statusCode(200);
+        courierSteps.deleteCourier(id)
+                .then()
+                .statusCode(SC_OK);
     }
 }

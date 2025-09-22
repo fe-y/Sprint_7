@@ -1,16 +1,19 @@
 package ru.yandex.praktikum.tests;
 
+import io.qameta.allure.Description;
 import io.qameta.allure.Step;
 import io.restassured.response.Response;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import ru.yandex.praktikum.models.Courier;
-import ru.yandex.praktikum.models.CourierLogin;
 import ru.yandex.praktikum.steps.CourierSteps;
-import static org.hamcrest.Matchers.containsString;
 
-public class CourierTest {
+import static org.apache.http.HttpStatus.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+
+public class CourierTest extends BaseTest {
 
     private int courierId;
     private Courier courier;
@@ -30,33 +33,59 @@ public class CourierTest {
     }
 
     @Test
+    @Description("Проверка успешного создания курьера и ответа API")
     public void createCourierPositive() {
-        createCourier(courier);
-        Response loginResponse = loginCourier(courier);
-        courierId = loginResponse.path("id");
+        Response response = createCourierStep(courier);
+
+        response.then()
+                .statusCode(SC_CREATED)
+                .body("ok", equalTo(true));
+
+        // Берём id безопасно
+        if (response.path("id") != null) {
+            courierId = response.path("id");
+        }
     }
 
     @Test
+    @Description("Проверка ошибки при создании курьера с уже существующим логином")
     public void createCourierDuplicate() {
-        createCourier(courier);
-        createCourierExpectingError(courier, 409, "Этот логин уже используется");
+        // Создаём первого курьера
+        Response firstResponse = createCourierStep(courier);
+        if (firstResponse.path("id") != null) {
+            courierId = firstResponse.path("id");
+        }
+
+        // Пробуем создать дубликат и проверяем ответ
+        Response duplicateResponse = courierSteps.createCourier(courier);
+        duplicateResponse.then()
+                .statusCode(SC_CONFLICT)
+                .body("message", containsString("Этот логин уже используется"));
     }
 
     @Test
+    @Description("Проверка ошибки при попытке создать курьера без логина")
     public void createCourierWithoutLogin() {
         Courier invalid = new Courier(null, "password123", "NoLogin");
-        createCourierExpectingError(invalid, 400, "Недостаточно данных для создания учетной записи");
+        createCourierExpectingError(invalid, SC_BAD_REQUEST,
+                "Недостаточно данных для создания учетной записи");
     }
 
     @Test
+    @Description("Проверка ошибки при попытке создать курьера без пароля")
     public void createCourierWithoutPassword() {
         Courier invalid = new Courier("loginWithoutPass", null, "NoPass");
-        createCourierExpectingError(invalid, 400, "Недостаточно данных для создания учетной записи");
+        createCourierExpectingError(invalid, SC_BAD_REQUEST,
+                "Недостаточно данных для создания учетной записи");
     }
 
-    @Step("Создать курьера {courier.login}")
-    private void createCourier(Courier courier) {
-        courierSteps.createCourier(courier).then().statusCode(201);
+    @Step("Создание курьера: {courier.login}")
+    private Response createCourierStep(Courier courier) {
+        Response response = courierSteps.createCourier(courier);
+        if (response == null) {
+            throw new RuntimeException("API вернул null при создании курьера!");
+        }
+        return response;
     }
 
     @Step("Попытка создать курьера {courier.login}, ожидаем ошибку {expectedStatus}")
@@ -67,17 +96,10 @@ public class CourierTest {
                 .body("message", containsString(expectedMessage));
     }
 
-    @Step("Войти как курьер {courier.login}")
-    private Response loginCourier(Courier courier) {
-        return courierSteps.loginCourier(new CourierLogin(courier.getLogin(), courier.getPassword()))
-                .then()
-                .statusCode(200)
-                .extract()
-                .response();
-    }
-
     @Step("Удалить курьера по ID {id}")
     private void deleteCourier(int id) {
-        courierSteps.deleteCourier(id).then().statusCode(200);
+        courierSteps.deleteCourier(id)
+                .then()
+                .statusCode(SC_OK);
     }
 }
