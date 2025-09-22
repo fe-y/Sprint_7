@@ -1,17 +1,14 @@
-package ru.yandex.praktikum.steps;
+package ru.yandex.praktikum.models;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.apache.commons.lang3.RandomStringUtils.randomNumeric;
-
 public class Order {
-
     private String firstName;
     private String lastName;
     private String address;
     private String metroStation;
     private String phone;
     private String[] color;
-
     public Order() {
         this.firstName = randomAlphabetic(6);
         this.lastName = randomAlphabetic(6);
@@ -21,12 +18,14 @@ public class Order {
         this.color = new String[]{}; // по умолчанию пустой массив
     }
 
-    // Сеттер для цвета
+// Сеттер для цвета
+
     public void setColor(String[] color) {
         this.color = color;
     }
 
     // Геттеры
+
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
     public String getAddress() { return address; }
