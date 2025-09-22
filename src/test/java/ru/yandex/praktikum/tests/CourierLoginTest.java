@@ -30,11 +30,22 @@ public class CourierLoginTest extends BaseTest {
     @After
     public void tearDown() {
         if (uniqueLogin != null) {
-            if (courierId == 0) {
-                Response loginCorrect = loginCourierStep(new CourierLogin(uniqueLogin, "password123"));
-                courierId = loginCorrect.path("id");
+            try {
+                // Если id ещё не получен, пробуем залогиниться и получить его
+                if (courierId == 0) {
+                    Response loginResponse = loginCourierStep(new CourierLogin(uniqueLogin, "password123"));
+                    if (loginResponse.statusCode() == SC_OK) {
+                        courierId = loginResponse.path("id");
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Не удалось получить id курьера для удаления: " + e.getMessage());
             }
-            deleteCourierStep(courierId);
+
+            // Удаляем курьера, если id получен
+            if (courierId != 0) {
+                deleteCourierStep(courierId);
+            }
         }
     }
 

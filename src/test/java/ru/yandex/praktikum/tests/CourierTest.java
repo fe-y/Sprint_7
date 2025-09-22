@@ -7,6 +7,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import ru.yandex.praktikum.models.Courier;
+import ru.yandex.praktikum.models.CourierLogin;
 import ru.yandex.praktikum.steps.CourierSteps;
 
 import static org.apache.http.HttpStatus.*;
@@ -27,8 +28,24 @@ public class CourierTest extends BaseTest {
 
     @After
     public void tearDown() {
-        if (courierId != 0) {
-            deleteCourier(courierId);
+        if (courier != null) {
+            try {
+                // Если id ещё не получен, пробуем получить его через логин
+                if (courierId == 0) {
+                    CourierLogin login = new CourierLogin(courier.getLogin(), courier.getPassword());
+                    Response loginResponse = courierSteps.loginCourier(login);
+                    if (loginResponse != null && loginResponse.statusCode() == SC_OK) {
+                        courierId = loginResponse.path("id");
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Не удалось получить id курьера для удаления: " + e.getMessage());
+            }
+
+            // Удаляем курьера, если id получен
+            if (courierId != 0) {
+                deleteCourier(courierId);
+            }
         }
     }
 
